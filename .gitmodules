@@ -1,0 +1,3 @@
+[submodule "wasi-lmbench"]
+	path = wasi-lmbench
+	url = https://github.com/PLSysSec/wasi-lmbench.git
