@@ -20,6 +20,8 @@ INVOKE_WAVE_RAW_SYSCALLS = LD_LIBRARY_PATH=../build/raw_syscalls/release $(SETUP
 INVOKE_WASMTIME = $(SETUP_BENCH) ../runtimes/wasmtime/target/release/wasmtime run --allow-unknown-exports --allow-precompiled  
 
 
+SPEC_PATH := ./wave-specbenchmark
+
 # shared commands
 # ==============================================================================
 build_raw_syscalls:
@@ -48,8 +50,6 @@ lmbench_wave: build_wave_lmbench
 	echo "Bench: open" >> wave.txt
 	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 open data/tmp.txt" --homedir="." >> ../wave.txt
 
-# We don't need a seperate build for this since we can just update the runtime library
-# with the instrumentation to track syscalls
 lmbench_raw_syscalls: build_raw_syscalls_lmbench
 	echo "Bench: null" > raw_syscalls.txt
 	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 null data/tmp.txt" --homedir="." >> ../raw_syscalls.txt
@@ -124,5 +124,44 @@ sqlite_run_wasm2c: $(SQLITE_BUILD)/speedtest1_wasm2c
 sqlite_run_raw_syscalls: $(SQLITE_BUILD)/speedtest1_raw_syscalls
 	$(WASM2C_BIN_ROOT)/wasm2c-runner $< --homedir=.
 
+
+# spec benchmarks
+# ==========================================================================
+# NATIVE_BUILD=linux32-i386-clang linux32-i386-clangzerocost
+# NACL_BUILDS=linux32-i386-nacl
+# SPEC_BUILDS=$(NACL_BUILDS) $(NATIVE_BUILDS)
+
+
+bootstrap_spec: 
+	cd $(SPEC_PATH) && SPEC_INSTALL_NOCHECK=1 SPEC_FORCE_INSTALL=1 sh install.sh -f
+
+# TODO: use parallel compilation? remove unnecessary options?
+build_spec:
+	cd $(SPEC_PATH) && source ./shrc && \
+	cd config && \
+	runspec --config=linux64-amd64-clang.cfg --action=build --noreportable --size=test wasm_compatible
+	runspec --config=wasmtime.cfg --action=build --noreportable --size=test wasm_compatible
+	runspec --config=wasm2c_wave.cfg --action=build --noreportable --size=test wasm_compatible	
+
+# echo "Cleaning dirs" && \
+# for spec_build in $(SPEC_BUILDS); do \
+# 	runspec --config=$$spec_build.cfg --action=clobber all_c_cpp 2&>1 > /dev/null; \
+# done && \
+#  2>&1 | grep -i "building"
+
+# TODO: change size of spec runs back to size=ref
+# TODO: finalize
+run_spec:
+	cd $(SPEC_PATH) && source ./shrc && cd config && \
+	runspec --config=wasm2c_wave.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=test wasm_compatible
+	#for spec_build in $(NATIVE_BUILDS); do \
+	#	runspec --config=$$spec_build.cfg --action=run --define cores=1 --iterations=1 --noreportable --size=ref all_c_cpp; \
+	#done && \
+	#for spec_build in $(NACL_BUILDS); do \
+	#	runspec --config=$$spec_build.cfg --action=run --define cores=1 --iterations=1 --noreportable --size=ref --nacl all_c_cpp; \
+	#done
+	#python3 spec_stats.py -i $(SPEC_PATH)/result --filter  \
+	#	"$(SPEC_PATH)/result/spec_results=Stock:Stock,NaCl:NaCl,SegmentZero:SegmentZero" -n 3 --usePercent
+	#mv $(SPEC_PATH)/result/ benchmarks/spec_$(shell date --iso=seconds)
 
 
