@@ -1,3 +1,6 @@
 [submodule "wasi-lmbench"]
 	path = wasi-lmbench
 	url = https://github.com/PLSysSec/wasi-lmbench.git
+[submodule "runtime/wasmtime"]
+	path = runtimes/wasmtime
+	url = git@github.com:PLSysSec/hostcall_instrumented_wasmtime.git
