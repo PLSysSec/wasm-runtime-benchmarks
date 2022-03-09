@@ -45,13 +45,21 @@ speedtest1.wasm.c: speedtest1.wasm
 	$(WASM2C_BIN_ROOT)/wasm2c -o speedtest1.wasm.c speedtest1.wasm
 
 speedtest1_wasm2c: speedtest1.wasm.c
-	gcc -shared -fPIC -O3 -o speedtest1_wasm2c speedtest1.wasm.c -I$(WASM2C_SRC_ROOT) $(WASM2C_SRC_ROOT)/wasm-rt-impl.c $(WASM2C_SRC_ROOT)/wasm-rt-os-unix.c $(WASM2C_SRC_ROOT)/wasm-rt-os-win.c $(WASM2C_SRC_ROOT)/wasm-rt-wasi.c ../../target/release/libwave.so -I../../bindings
+	gcc -shared -fPIC -O3 -o speedtest1_wasm2c speedtest1.wasm.c -I$(WASM2C_SRC_ROOT) $(WASM2C_SRC_ROOT)/wasm-rt-impl.c $(WASM2C_SRC_ROOT)/wasm-rt-os-unix.c $(WASM2C_SRC_ROOT)/wasm-rt-os-win.c $(WASM2C_SRC_ROOT)/wasm-rt-wasi.c ../build/wave/release/libwave.so -I../../bindings
+
+speedtest1_raw_syscalls: speedtest1.wasm.c
+	gcc -shared -fPIC -O3 -o speedtest1_raw_syscalls speedtest1.wasm.c -I$(WASM2C_SRC_ROOT) $(WASM2C_SRC_ROOT)/wasm-rt-impl.c $(WASM2C_SRC_ROOT)/wasm-rt-os-unix.c $(WASM2C_SRC_ROOT)/wasm-rt-os-win.c $(WASM2C_SRC_ROOT)/wasm-rt-wasi.c ../build/raw_syscalls/release/libwave.so -I../../bindings
+
 
 speedtest1_wasmtime: speedtest1.wasm
 	$(WASMTIME_ROOT)/target/release/wasmtime compile speedtest1.wasm -o speedtest1_wasmtime
 
-run_wasmtime: speedtest1.wasm
+run_wasmtime: speedtest1_wasmtime
 	$(WASMTIME_ROOT)/target/release/wasmtime --dir=. speedtest1_wasmtime --allow-precompiled 2>/dev/null
 
 run_wasm2c: speedtest1_wasm2c 
 	$(WASM2C_BIN_ROOT)/wasm2c-runner ./speedtest1_wasm2c --homedir=.
+
+run_raw_syscalls: speedtest1_raw_syscalls
+	$(WASM2C_BIN_ROOT)/wasm2c-runner ./speedtest1_raw_syscalls --homedir=.
+
