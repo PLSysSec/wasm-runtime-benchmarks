@@ -4,3 +4,6 @@
 [submodule "runtime/wasmtime"]
 	path = runtimes/wasmtime
 	url = git@github.com:PLSysSec/hostcall_instrumented_wasmtime.git
+[submodule "sqlite/sqlite"]
+	path = sqlite/sqlite
+	url = git@github.com:sqlite/sqlite.git
