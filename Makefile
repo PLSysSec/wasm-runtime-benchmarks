@@ -63,3 +63,7 @@ build_wave:
 build_wasmtime:
 	cd wasi-lmbench && RUNTIME=wasmtime $(MAKE)
 
+clean:
+	cd wasi-lmbench && $(MAKE) clean
+
+
