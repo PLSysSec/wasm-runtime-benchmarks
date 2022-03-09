@@ -1,4 +1,17 @@
-.PHONY: bench_wave bench_wasmtime
+.PHONY: bench_wave bench_raw_syscalls bench_wasmtime run_wasmtime run_wasm2c run_raw_syscalls
+
+SQLITE_ROOT    ?= sqlite/sqlite
+
+RLBOX_ROOT      = ../rlbox_wasm2c_sandbox
+WASM2C_SRC_ROOT = $(RLBOX_ROOT)/build/_deps/mod_wasm2c-src/wasm2c
+WASM2C_BIN_ROOT = $(RLBOX_ROOT)/build/_deps/mod_wasm2c-src/bin
+
+SQLITE_BUILD = build/sqlite
+
+WASI_SDK_ROOT = $(RLBOX_ROOT)/build/_deps/wasiclang-src/build/install/opt/wasi-sdk
+
+WASMTIME_ROOT=runtimes/wasmtime
+
 
 PINNED_CPU = 8
 SETUP_BENCH = nice -n -20 taskset -c $(PINNED_CPU) 
@@ -76,5 +89,47 @@ build_wasmtime_lmbench:
 clean:
 	cd wasi-lmbench && $(MAKE) clean
 	rm -rf build
+
+
+
+# sqlite benchmarks
+# Remember: $< is first input, $@ is output
+
+build_sqlite: speedtest1_wasmtime speedtest1_wasm2c speedtest1_raw_syscalls
+
+clean_sqlite:
+	$(RM) $(SQLITE_BUILD)/speedtest1.wasm
+	$(RM) $(SQLITE_BUILD)/speedtest1.wasm.c
+	$(RM) $(SQLITE_BUILD)/speedtest1.wasm.h
+	$(RM) $(SQLITE_BUILD)/speedtest1_wasmtime
+	$(RM) $(SQLITE_BUILD)/speedtest1_wasm2c
+	$(RM) -r $(SQLITE_BUILD) 
+
+$(SQLITE_BUILD)/speedtest1.wasm:
+	mkdir -p $(SQLITE_BUILD) 
+	cd $(SQLITE_BUILD) && ../../sqlite/compile_speedtest1.sh ../../$(WASI_SDK_ROOT) ../../$(SQLITE_ROOT) ../../$(SQLITE_ROOT)/../lib
+	cp $(SQLITE_BUILD)/speedtest1 $(SQLITE_BUILD)/speedtest1.wasm
+
+$(SQLITE_BUILD)/speedtest1.wasm.c: $(SQLITE_BUILD)/speedtest1.wasm
+	$(WASM2C_BIN_ROOT)/wasm2c -o $@ $<
+
+$(SQLITE_BUILD)/speedtest1_wasm2c: $(SQLITE_BUILD)/speedtest1.wasm.c
+	gcc -shared -fPIC -O3 -o $@ $< -I$(WASM2C_SRC_ROOT) $(WASM2C_SRC_ROOT)/wasm-rt-impl.c $(WASM2C_SRC_ROOT)/wasm-rt-os-unix.c $(WASM2C_SRC_ROOT)/wasm-rt-os-win.c $(WASM2C_SRC_ROOT)/wasm-rt-wasi.c build/wave/release/libwave.so -I../bindings
+
+$(SQLITE_BUILD)/speedtest1_raw_syscalls: $(SQLITE_BUILD)/speedtest1.wasm.c
+	gcc -shared -fPIC -O3 -o $@ $< -I$(WASM2C_SRC_ROOT) $(WASM2C_SRC_ROOT)/wasm-rt-impl.c $(WASM2C_SRC_ROOT)/wasm-rt-os-unix.c $(WASM2C_SRC_ROOT)/wasm-rt-os-win.c $(WASM2C_SRC_ROOT)/wasm-rt-wasi.c build/raw_syscalls/release/libwave.so -I../bindings
+
+$(SQLITE_BUILD)/speedtest1_wasmtime: $(SQLITE_BUILD)/speedtest1.wasm
+	$(WASMTIME_ROOT)/target/release/wasmtime compile $< -o $@
+
+run_wasmtime: $(SQLITE_BUILD)/speedtest1_wasmtime
+	$(WASMTIME_ROOT)/target/release/wasmtime --dir=. $< --allow-precompiled 2>/dev/null
+
+run_wasm2c: $(SQLITE_BUILD)/speedtest1_wasm2c
+	$(WASM2C_BIN_ROOT)/wasm2c-runner $< --homedir=.
+
+run_raw_syscalls: $(SQLITE_BUILD)/speedtest1_raw_syscalls
+	$(WASM2C_BIN_ROOT)/wasm2c-runner $< --homedir=.
+
 
 
