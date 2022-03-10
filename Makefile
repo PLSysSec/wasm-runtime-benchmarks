@@ -96,7 +96,7 @@ build_wasmtime_lmbench:
 # ==============================================================================
 # Remember: $< is first input, $@ is output
 
-build_sqlite: speedtest1_wasmtime speedtest1_wasm2c speedtest1_raw_syscalls
+build_sqlite: $(SQLITE_BUILD)/speedtest1_wasmtime $(SQLITE_BUILD)/speedtest1_wasm2c $(SQLITE_BUILD)/speedtest1_raw_syscalls
 
 $(SQLITE_BUILD)/speedtest1.wasm:
 	mkdir -p $(SQLITE_BUILD) 
