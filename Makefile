@@ -1,4 +1,4 @@
-.PHONY: lmbench_wave lmbench_raw_syscalls lmbench_wasmtime sqlite_run_wasmtime sqlite_run_wasm2c sqlite_run_raw_syscalls
+.PHONY: lmbench_wave lmbench_raw_syscalls lmbench_wasmtime sqlite_run_wasmtime sqlite_run_wasm2c sqlite_run_raw_syscalls run_sqlite run_lmbench run_all
 
 SQLITE_ROOT    ?= sqlite/sqlite
 
@@ -14,10 +14,16 @@ WASMTIME_ROOT=runtimes/wasmtime
 
 
 PINNED_CPU = 8
-SETUP_BENCH = nice -n -20 taskset -c $(PINNED_CPU) 
+#SETUP_BENCH = nice -n -20 taskset -c $(PINNED_CPU) 
+SETUP_BENCH = 
 INVOKE_WAVE = LD_LIBRARY_PATH=../build/wave/release $(SETUP_BENCH) ../../rlbox_wasm2c_sandbox/build/_deps/mod_wasm2c-src/bin/wasm2c-runner 
 INVOKE_WAVE_RAW_SYSCALLS = LD_LIBRARY_PATH=../build/raw_syscalls/release $(SETUP_BENCH) ../../rlbox_wasm2c_sandbox/build/_deps/mod_wasm2c-src/bin/wasm2c-runner
 INVOKE_WASMTIME = $(SETUP_BENCH) ../runtimes/wasmtime/target/release/wasmtime run --allow-unknown-exports --allow-precompiled  
+
+#NOW=`date '+%F_%H:%M:%S'`
+#RESULTS_BASE=results/$(date "+%Y_%m_%d-%H_%M_%S")
+#RESULTS_BASE=results/$(NOW)
+RESULTS_BASE:= results/$(shell date --iso=seconds)
 
 
 SPEC_PATH := ./wave-specbenchmark
@@ -37,46 +43,49 @@ clean:
 # lmbench benchmarks
 # ==============================================================================
 lmbench_wave: build_wave_lmbench
-	echo "Bench: null" > wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 null data/tmp.txt" --homedir="." >> ../wave.txt
-	echo "Bench: read" >> wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 read data/tmp.txt" --homedir="/" >> ../wave.txt
-	echo "Bench: write" >> wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 write data/tmp.txt" --homedir="/" >> ../wave.txt
-	echo "Bench: stat" >> wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 stat data/tmp.txt" --homedir="." >> ../wave.txt
-	echo "Bench: fstat" >> wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 fstat data/tmp.txt" --homedir="." >> ../wave.txt
-	echo "Bench: open" >> wave.txt
-	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 open data/tmp.txt" --homedir="." >> ../wave.txt
+	mkdir -p $(RESULTS_BASE)/lmbench
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 null data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_null.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 read data/tmp.txt" --homedir="/" 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_read.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 write data/tmp.txt" --homedir="/" 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_write.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 stat data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_stat.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 fstat data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_fstat.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE) bin/wave/lat_syscall --args="lat_syscall -N 1000000 open data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/hostcall_results.txt $(RESULTS_BASE)/lmbench/hostcalls_open.txt 
 
 lmbench_raw_syscalls: build_raw_syscalls_lmbench
-	echo "Bench: null" > raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 null data/tmp.txt" --homedir="." >> ../raw_syscalls.txt
-	echo "Bench: read" >> raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 read data/tmp.txt" --homedir="/" >> ../raw_syscalls.txt
-	echo "Bench: write" >> raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 write data/tmp.txt" --homedir="/" >> ../raw_syscalls.txt
-	echo "Bench: stat" >> raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 stat data/tmp.txt" --homedir="." >> ../raw_syscalls.txt
-	echo "Bench: fstat" >> raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 fstat data/tmp.txt" --homedir="." >> ../raw_syscalls.txt
-	echo "Bench: open" >> raw_syscalls.txt
-	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 open data/tmp.txt" --homedir="." >> ../raw_syscalls.txt
+	mkdir -p $(RESULTS_BASE)/lmbench
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 null data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_null.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 read data/tmp.txt" --homedir="/" 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_read.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 write data/tmp.txt" --homedir="/" 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_write.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 stat data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_stat.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 fstat data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_fstat.txt 
+	cd wasi-lmbench && $(INVOKE_WAVE_RAW_SYSCALLS) bin/wave/lat_syscall --args="lat_syscall -N 1000000 open data/tmp.txt" --homedir="." 
+	mv wasi-lmbench/syscall_results.txt $(RESULTS_BASE)/lmbench/syscalls_open.txt 
 
 lmbench_wasmtime: build_wasmtime_lmbench
-	echo "Bench: null" > wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 null data/tmp.txt >> ../wasmtime.txt
-	echo "Bench: read" >> wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=/ bin/wasmtime/lat_syscall -- -N 1000000 read data/tmp.txt >> ../wasmtime.txt
-	echo "Bench: write" >> wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=/ bin/wasmtime/lat_syscall -- -N 1000000 write data/tmp.txt >> ../wasmtime.txt
-	echo "Bench: stat" >> wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 stat data/tmp.txt >> ../wasmtime.txt
-	echo "Bench: fstat" >> wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 fstat data/tmp.txt >> ../wasmtime.txt
-	echo "Bench: open" >> wasmtime.txt
-	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 open data/tmp.txt >> ../wasmtime.txt
+	mkdir -p $(RESULTS_BASE)/lmbench
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 null data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_null.txt 
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=/ bin/wasmtime/lat_syscall -- -N 1000000 read data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_read.txt 	
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=/ bin/wasmtime/lat_syscall -- -N 1000000 write data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_write.txt 	
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 stat data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_stat.txt 	
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 fstat data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_fstat.txt 	
+	cd wasi-lmbench && $(INVOKE_WASMTIME) --dir=. bin/wasmtime/lat_syscall -- -N 1000000 open data/tmp.txt 
+	mv wasi-lmbench/wasmtime_results.txt $(RESULTS_BASE)/lmbench/wasmtime_open.txt 
 
 
 build_wave_lmbench: build_wave
@@ -88,7 +97,7 @@ build_raw_syscalls_lmbench: build_raw_syscalls
 build_wasmtime_lmbench:
 	cd wasi-lmbench && RUNTIME=wasmtime $(MAKE)
 
-
+run_lmbench: lmbench_wasmtime lmbench_wave lmbench_raw_syscalls
 
 
 
@@ -97,6 +106,8 @@ build_wasmtime_lmbench:
 # Remember: $< is first input, $@ is output
 
 build_sqlite: $(SQLITE_BUILD)/speedtest1_wasmtime $(SQLITE_BUILD)/speedtest1_wasm2c $(SQLITE_BUILD)/speedtest1_raw_syscalls
+
+run_sqlite: sqlite_run_wasmtime sqlite_run_wasm2c sqlite_run_raw_syscalls
 
 $(SQLITE_BUILD)/speedtest1.wasm:
 	mkdir -p $(SQLITE_BUILD) 
@@ -116,13 +127,19 @@ $(SQLITE_BUILD)/speedtest1_wasmtime: $(SQLITE_BUILD)/speedtest1.wasm
 	$(WASMTIME_ROOT)/target/release/wasmtime compile $< -o $@
 
 sqlite_run_wasmtime: $(SQLITE_BUILD)/speedtest1_wasmtime
+	mkdir -p $(RESULTS_BASE)/sqlite
 	$(WASMTIME_ROOT)/target/release/wasmtime --dir=. $< --allow-precompiled 2>/dev/null
+	mv wasmtime_results.txt $(RESULTS_BASE)/sqlite/wasmtime.txt
 
 sqlite_run_wasm2c: $(SQLITE_BUILD)/speedtest1_wasm2c
+	mkdir -p $(RESULTS_BASE)/sqlite
 	$(WASM2C_BIN_ROOT)/wasm2c-runner $< --homedir=.
+	mv hostcall_results.txt $(RESULTS_BASE)/sqlite/hostcalls.txt 
 
 sqlite_run_raw_syscalls: $(SQLITE_BUILD)/speedtest1_raw_syscalls
+	mkdir -p $(RESULTS_BASE)/sqlite
 	$(WASM2C_BIN_ROOT)/wasm2c-runner $< --homedir=.
+	mv syscall_results.txt $(RESULTS_BASE)/sqlite/syscalls.txt
 
 
 # spec benchmarks
@@ -131,17 +148,20 @@ sqlite_run_raw_syscalls: $(SQLITE_BUILD)/speedtest1_raw_syscalls
 # NACL_BUILDS=linux32-i386-nacl
 # SPEC_BUILDS=$(NACL_BUILDS) $(NATIVE_BUILDS)
 
+# SPEC_BENCHMARKS = 401.bzip2 429.mcf 433.milc 444.namd 445.gobmk 459.sjeng 462.libquantum 464.h264ref 470.lbm 473.astar 
+SPEC_BENCHMARKS = 401.bzip2 433.milc 444.namd 462.libquantum 470.lbm 473.astar 
+SPEC_BENCH_BASE = wave-specbenchmark/benchspec/CPU2006/
+
 
 bootstrap_spec: 
 	cd $(SPEC_PATH) && SPEC_INSTALL_NOCHECK=1 SPEC_FORCE_INSTALL=1 sh install.sh -f
 
 # TODO: use parallel compilation? remove unnecessary options?
 build_spec:
-	cd $(SPEC_PATH) && source ./shrc && \
-	cd config && \
-	runspec --config=linux64-amd64-clang.cfg --action=build --noreportable --size=test wasm_compatible
-	runspec --config=wasmtime.cfg --action=build --noreportable --size=test wasm_compatible
-	runspec --config=wasm2c_wave.cfg --action=build --noreportable --size=test wasm_compatible	
+	cd $(SPEC_PATH) && source ./shrc && cd config && \
+	runspec --config=wasmtime.cfg --action=build --noreportable --size=test wasm_compatible && \
+	runspec --config=wasm2c_wave.cfg --action=build --noreportable --size=test wasm_compatible && \
+	runspec --config=wave_raw_syscalls.cfg --action=build --noreportable --size=test wasm_compatible
 
 # echo "Cleaning dirs" && \
 # for spec_build in $(SPEC_BUILDS); do \
@@ -152,16 +172,16 @@ build_spec:
 # TODO: change size of spec runs back to size=ref
 # TODO: finalize
 run_spec:
+	mkdir -p $(RESULTS_BASE)/spec && \
 	cd $(SPEC_PATH) && source ./shrc && cd config && \
-	runspec --config=wasm2c_wave.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=test wasm_compatible
-	#for spec_build in $(NATIVE_BUILDS); do \
-	#	runspec --config=$$spec_build.cfg --action=run --define cores=1 --iterations=1 --noreportable --size=ref all_c_cpp; \
-	#done && \
-	#for spec_build in $(NACL_BUILDS); do \
-	#	runspec --config=$$spec_build.cfg --action=run --define cores=1 --iterations=1 --noreportable --size=ref --nacl all_c_cpp; \
-	#done
-	#python3 spec_stats.py -i $(SPEC_PATH)/result --filter  \
-	#	"$(SPEC_PATH)/result/spec_results=Stock:Stock,NaCl:NaCl,SegmentZero:SegmentZero" -n 3 --usePercent
-	#mv $(SPEC_PATH)/result/ benchmarks/spec_$(shell date --iso=seconds)
+	runspec --config=wasmtime.cfg --wasmtime --action=run --define cores=1 --iterations=1 --noreportable --size=test wasm_compatible && \
+	runspec --config=wasm2c_wave.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=test wasm_compatible && \
+	runspec --config=wave_raw_syscalls.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=test wasm_compatible
+	for bench in $(SPEC_BENCHMARKS); do \
+		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_test_wasmtime.0000/wasmtime_results.txt $(RESULTS_BASE)/spec/wasmtime_$$bench.txt; \
+		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_test_wasm2c_wave.0000/hostcall_results.txt $(RESULTS_BASE)/spec/hostcalls_$$bench.txt; \
+		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_test_wave_raw_syscalls.0000/syscall_results.txt $(RESULTS_BASE)/spec/syscalls_$$bench.txt; \
+	done 
 
+run_all: run_sqlite run_lmbench run_spec
 
