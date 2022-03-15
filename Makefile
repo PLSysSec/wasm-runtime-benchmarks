@@ -149,7 +149,7 @@ sqlite_run_raw_syscalls: $(SQLITE_BUILD)/speedtest1_raw_syscalls
 # SPEC_BUILDS=$(NACL_BUILDS) $(NATIVE_BUILDS)
 
 # SPEC_BENCHMARKS = 401.bzip2 429.mcf 433.milc 444.namd 445.gobmk 459.sjeng 462.libquantum 464.h264ref 470.lbm 473.astar 
-SPEC_BENCHMARKS = 401.bzip2 433.milc 444.namd 462.libquantum 470.lbm 473.astar 
+SPEC_BENCHMARKS = 401.bzip2 429.mcf 433.milc 444.namd 462.libquantum 470.lbm 473.astar 
 SPEC_BENCH_BASE = wave-specbenchmark/benchspec/CPU2006/
 
 
