@@ -2,13 +2,15 @@
 
 SQLITE_ROOT    ?= sqlite/sqlite
 
-RLBOX_ROOT      = ../rlbox_wasm2c_sandbox
-WASM2C_SRC_ROOT = $(RLBOX_ROOT)/build/_deps/mod_wasm2c-src/wasm2c
-WASM2C_BIN_ROOT = $(RLBOX_ROOT)/build/_deps/mod_wasm2c-src/bin
+WASI_SDK_ROOT=../tools/wasi-sdk
+#WASI_SDK_INSTALL=$(WASI_SDK_ROOT)/build/install/opt/wasi-sdk/bin/
+WASI_SDK_INSTALL=$(WASI_SDK_ROOT)/build/install/opt/wasi-sdk/
+WASM2C_ROOT=../tools/wasm2c_sandbox_compiler
+
+WASM2C_SRC_ROOT = $(WASM2C_ROOT)/wasm2c
+WASM2C_BIN_ROOT = $(WASM2C_ROOT)/bin
 
 SQLITE_BUILD = build/sqlite
-
-WASI_SDK_ROOT = $(RLBOX_ROOT)/build/_deps/wasiclang-src/build/install/opt/wasi-sdk
 
 WASMTIME_ROOT=runtimes/wasmtime
 
@@ -16,8 +18,8 @@ WASMTIME_ROOT=runtimes/wasmtime
 PINNED_CPU = 8
 #SETUP_BENCH = nice -n -20 taskset -c $(PINNED_CPU) 
 SETUP_BENCH = 
-INVOKE_WAVE = LD_LIBRARY_PATH=../build/wave/release $(SETUP_BENCH) ../../rlbox_wasm2c_sandbox/build/_deps/mod_wasm2c-src/bin/wasm2c-runner 
-INVOKE_WAVE_RAW_SYSCALLS = LD_LIBRARY_PATH=../build/raw_syscalls/release $(SETUP_BENCH) ../../rlbox_wasm2c_sandbox/build/_deps/mod_wasm2c-src/bin/wasm2c-runner
+INVOKE_WAVE = LD_LIBRARY_PATH=../build/wave/release $(SETUP_BENCH) ../$(WASM2C_BIN_ROOT)/wasm2c-runner 
+INVOKE_WAVE_RAW_SYSCALLS = LD_LIBRARY_PATH=../build/raw_syscalls/release $(SETUP_BENCH) ../$(WASM2C_BIN_ROOT)/wasm2c-runner
 INVOKE_WASMTIME = $(SETUP_BENCH) ../runtimes/wasmtime/target/release/wasmtime run --allow-unknown-exports --allow-precompiled  
 
 #NOW=`date '+%F_%H:%M:%S'`
@@ -97,6 +99,8 @@ build_raw_syscalls_lmbench: build_raw_syscalls
 build_wasmtime_lmbench:
 	cd wasi-lmbench && RUNTIME=wasmtime $(MAKE)
 
+build_lmbench: build_wave_lmbench build_raw_syscalls_lmbench build_wasmtime_lmbench
+
 run_lmbench: lmbench_wasmtime lmbench_wave lmbench_raw_syscalls
 
 
@@ -111,7 +115,7 @@ run_sqlite: sqlite_run_wasmtime sqlite_run_wasm2c sqlite_run_raw_syscalls
 
 $(SQLITE_BUILD)/speedtest1.wasm:
 	mkdir -p $(SQLITE_BUILD) 
-	cd $(SQLITE_BUILD) && ../../sqlite/compile_speedtest1.sh ../../$(WASI_SDK_ROOT) ../../$(SQLITE_ROOT) ../../$(SQLITE_ROOT)/../lib
+	cd $(SQLITE_BUILD) && ../../sqlite/compile_speedtest1.sh ../../$(WASI_SDK_INSTALL) ../../$(SQLITE_ROOT) ../../$(SQLITE_ROOT)/../lib
 	cp $(SQLITE_BUILD)/speedtest1 $(SQLITE_BUILD)/speedtest1.wasm
 
 $(SQLITE_BUILD)/speedtest1.wasm.c: $(SQLITE_BUILD)/speedtest1.wasm
