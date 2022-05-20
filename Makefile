@@ -7,6 +7,12 @@ WASI_SDK_ROOT=../tools/wasi-sdk
 WASI_SDK_INSTALL=$(WASI_SDK_ROOT)/build/install/opt/wasi-sdk/
 WASM2C_ROOT=../tools/wasm2c_sandbox_compiler
 
+#WASI_SDK_ROOT=../../../tools/wasi-sdk
+#WASI_SDK_INSTALL=$(WASI_SDK_ROOT)/build/install/opt/wasi-sdk/
+#WASM2C_ROOT=../../../tools/wasm2c_sandbox_compiler
+
+
+
 WASM2C_SRC_ROOT = $(WASM2C_ROOT)/wasm2c
 WASM2C_BIN_ROOT = $(WASM2C_ROOT)/bin
 
