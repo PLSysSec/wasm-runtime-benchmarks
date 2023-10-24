@@ -11,7 +11,6 @@ from graphs import make_graph
 
 runtimes = ["hostcalls", "syscalls", "wasmtime"]
 lmbench_benchmarks = ["null", "read", "write", "stat", "fstat", "open"]
-spec_benchmarks = ["401.bzip2", "429.mcf", "444.namd", "462.libquantum", "470.lbm", "473.astar"]
 
 
 # hostcalls_401.bzip2.txt  hostcalls_462.libquantum.txt  
@@ -145,35 +144,12 @@ def run_sqlite(input_path, output_path):
 # syscalls_444.namd.txt   syscalls_473.astar.txt       
 
 
-def run_spec(input_path, output_path):
-    all_data = {}
-    for benchmark in spec_benchmarks:
-        all_data[benchmark] = {}
-        for runtime in runtimes:
-            print(runtime, benchmark)
-            input_file = os.path.join(input_path, runtime + "_" + benchmark + ".txt")
-            d = load_data(input_file)
-            all_data[benchmark][runtime] = d
-            # print(d)
-            # hostcall_name = lmbench_translation_table[benchmark]
-            # mean = d[hostcall_name][1] # gather mean for each benchmark
-            # all_data[runtime][benchmark] = mean
-            #make_graph(input_file, output_file)
-    table = create_spec_summary_table(all_data)
-    print(table)
-    count_spec_calls(all_data)
-    #print(all_data)
-    # d = load_data(input_path)
-    # for k, v in d.items():
-    #     print(k, v)
 
 def run(input_dir, output_dir, benchmark):
     if benchmark == 'lmbench':
         run_lmbench(input_dir, output_dir)
     elif benchmark == 'sqlite':
         run_sqlite(input_dir, output_dir)
-    elif benchmark == 'spec':
-        run_spec(input_dir, output_dir)
     else:
         print("Unknown benchmark: {}".format(benchmark))
         exit(0)
@@ -183,7 +159,7 @@ def main():
     parser = argparse.ArgumentParser(description='Graph Results')
     parser.add_argument('-i', dest='input_path', help='input directory containing results')
     parser.add_argument('-o', dest='output_path', help='output directory with graphs')
-    parser.add_argument('-b', dest='benchmark', help='(lmbench | sqlite | spec)')
+    parser.add_argument('-b', dest='benchmark', help='(lmbench | sqlite)')
     args = parser.parse_args()
     run(args.input_path, args.output_path, args.benchmark)
 

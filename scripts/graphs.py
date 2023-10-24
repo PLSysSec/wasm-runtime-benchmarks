@@ -34,7 +34,6 @@ def make_graph(all_times, output_path, use_percent=False):
       rects.append(ax.bar(ind + width*idx, val, width, bottom=bottom, color=colors[idx]))
 
 
-    #ax.set_xlabel('Spec2006 Benchmarks')
     if use_percent:
          ax.set_ylabel('Execution overhead')
     else:

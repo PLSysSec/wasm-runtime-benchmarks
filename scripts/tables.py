@@ -156,30 +156,6 @@ def create_sqlite_summary_table_aggregate(data):
 
 
 
-def create_spec_summary_table(spec_data):
-    #print(spec_data)
-    names_row = ""
-    wave_row = "wave "
-    wasmtime_row = "wasmtime "
-    syscalls_row = "syscalls "
-    for benchmark,benchdata in spec_data.items():
-        print(benchdata)
-        wave_total = compute_aggregate(benchdata['hostcalls'])
-        wasmtime_total = compute_aggregate(benchdata['wasmtime'])
-        syscalls_total = compute_aggregate(benchdata['syscalls'])
-
-        names_row += "& " + benchmark
-        wave_row += "& " + str(round(wave_total / 1000, 2)) # milliseconds
-        wasmtime_row += "& " + str(round(wasmtime_total / 1000, 2))
-        syscalls_row += "& " + str(round(syscalls_total / 1000, 2))
-
-    names_row += "\\\\"
-    wave_row += "\\\\"
-    wasmtime_row += "\\\\"
-    syscalls_row += "\\\\"
-
-    table_str = "\n\\hline\n".join([names_row, wave_row, wasmtime_row, syscalls_row]) + "\n"
-    return table_str
 
 
 
@@ -236,18 +212,3 @@ def count_sqlite_calls(data):
 
     print("total hostcalls: " + str(total_hostcalls))
 
-
-def count_spec_calls(spec_data):
-    total_hostcalls = []
-    for benchmark,benchdata in spec_data.items():
-        benchdata = benchdata["hostcalls"]
-        #print(benchdata)
-        num_samples = [x[0]  for x in benchdata.values()]
-        #print(num_samples)
-        total_hostcalls.append(sum(num_samples))
-        #print(total_hostcalls)
-    print(total_hostcalls)
-    min_hostcalls = min(total_hostcalls)
-    max_hostcalls = max(total_hostcalls)
-    geomean_hostcalls = geomean(total_hostcalls)
-    print(f"Hostcalls: min = {min_hostcalls} max = {max_hostcalls} geomean = {geomean_hostcalls}")

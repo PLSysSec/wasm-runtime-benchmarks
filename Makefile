@@ -39,8 +39,6 @@ INVOKE_WAVE_WITH_SYSCALLS = LD_LIBRARY_PATH=../build/wave_with_syscalls/release 
 RESULTS_BASE:= results/$(shell date --iso=seconds)
 
 
-SPEC_PATH := ./wave-specbenchmark
-
 # shared commands
 # ==============================================================================
 build_raw_syscalls:
@@ -194,66 +192,6 @@ sqlite_run_wave_with_syscalls: $(SQLITE_BUILD)/speedtest1_wasm2c_with_syscalls
 	mv hostcall_results.txt $(RESULTS_BASE)/sqlite/hostcalls.txt 
 	mv syscall_results.txt $(RESULTS_BASE)/sqlite/syscalls.txt
 
-# spec benchmarks
-# ==========================================================================
-# NATIVE_BUILD=linux32-i386-clang linux32-i386-clangzerocost
-# NACL_BUILDS=linux32-i386-nacl
-# SPEC_BUILDS=$(NACL_BUILDS) $(NATIVE_BUILDS)
 
-# SPEC_BENCHMARKS = 401.bzip2 429.mcf 433.milc 444.namd 445.gobmk 459.sjeng 462.libquantum 464.h264ref 470.lbm 473.astar 
-SPEC_BENCHMARKS = 401.bzip2 429.mcf 433.milc 444.namd 462.libquantum 470.lbm 473.astar 
-SPEC_BENCH_BASE = wave-specbenchmark/benchspec/CPU2006/
-
-
-bootstrap_spec: 
-	cd $(SPEC_PATH) && SPEC_INSTALL_NOCHECK=1 SPEC_FORCE_INSTALL=1 sh install.sh -f
-
-# TODO: use parallel compilation? remove unnecessary options?
-build_spec:
-	cd $(SPEC_PATH) && source ./shrc && cd config && \
-	runspec --config=wasmtime.cfg --action=build --noreportable --size=test wasm_compatible && \
-	runspec --config=wasm2c_wave.cfg --action=build --noreportable --size=test wasm_compatible && \
-	runspec --config=wave_raw_syscalls.cfg --action=build --noreportable --size=test wasm_compatible
-
-# echo "Cleaning dirs" && \
-# for spec_build in $(SPEC_BUILDS); do \
-# 	runspec --config=$$spec_build.cfg --action=clobber all_c_cpp 2&>1 > /dev/null; \
-# done && \
-#  2>&1 | grep -i "building"
-
-run_spec:
-	mkdir -p $(RESULTS_BASE)/spec && \
-	cd $(SPEC_PATH) && source ./shrc && cd config && \
-	sync; runspec --config=wasmtime.cfg --wasmtime --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible; \
-	sync; runspec --config=wasm2c_wave.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible;  \
-	sync; runspec --config=wave_raw_syscalls.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible;
-	for bench in $(SPEC_BENCHMARKS); do \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasmtime.0000/wasmtime_results.txt $(RESULTS_BASE)/spec/wasmtime_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasm2c_wave.0000/hostcall_results.txt $(RESULTS_BASE)/spec/hostcalls_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wave_raw_syscalls.0000/syscall_results.txt $(RESULTS_BASE)/spec/syscalls_$$bench.txt; \
-	done 
-
-move_spec:
-	mkdir -p $(RESULTS_BASE)/spec && \
-	for bench in $(SPEC_BENCHMARKS); do \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasmtime.0000/wasmtime_results.txt $(RESULTS_BASE)/spec/wasmtime_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasm2c_wave.0000/hostcall_results.txt $(RESULTS_BASE)/spec/hostcalls_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wave_raw_syscalls.0000/syscall_results.txt $(RESULTS_BASE)/spec/syscalls_$$bench.txt; \
-	done 
-
-run_spec_reversed:
-	mkdir -p $(RESULTS_BASE)/spec && \
-	cd $(SPEC_PATH) && source ./shrc && cd config && \
-	mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wave_raw_syscalls.0000/syscall_results.txt $(RESULTS_BASE)/spec/syscalls_$$bench.txt; \
-	runspec --config=wave_raw_syscalls.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible && \
-	runspec --config=wasm2c_wave.cfg --wasm2c_wave --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible && \
-	runspec --config=wasmtime.cfg --wasmtime --action=run --define cores=1 --iterations=1 --noreportable --size=ref wasm_compatible 
-	for bench in $(SPEC_BENCHMARKS); do \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasmtime.0000/wasmtime_results.txt $(RESULTS_BASE)/spec/wasmtime_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wasm2c_wave.0000/hostcall_results.txt $(RESULTS_BASE)/spec/hostcalls_$$bench.txt; \
-		mv $(SPEC_BENCH_BASE)/$$bench/run/run_base_ref_wave_raw_syscalls.0000/syscall_results.txt $(RESULTS_BASE)/spec/syscalls_$$bench.txt; \
-	done 
-
-
-run_all: run_sqlite run_lmbench run_spec
+run_all: run_sqlite run_lmbench
 
