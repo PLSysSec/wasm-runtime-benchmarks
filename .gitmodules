@@ -7,6 +7,3 @@
 [submodule "sqlite/sqlite"]
 	path = sqlite/sqlite
 	url = git@github.com:sqlite/sqlite.git
-[submodule "wave-specbenchmark"]
-	path = wave-specbenchmark
-	url = git@github.com:PLSysSec/wave-specbenchmark.git
